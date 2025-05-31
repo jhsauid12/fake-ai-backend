@@ -1,47 +1,31 @@
-﻿from flask import Flask, request, jsonify
-import random
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)  # Разрешаем запросы с других доменов (например, с Netlify)
 
-def fake_thought_response(msg):
-    ideas = [
-        "Это интересный вопрос. Возможно, он связан с {}. Я бы предположил, что {}.",
-        "Хмм... Думаю, что {}. Хотя это зависит от многих факторов.",
-        "Мой внутренний анализ подсказывает, что {}.",
-        "Можно рассуждать так: {}. Хотя истина может быть глубже.",
-    ]
-    topic = extract_topic(msg)
-    fill = f"это связано с '{topic}'" if topic else "всё гораздо сложнее, чем кажется"
-    return random.choice(ideas).format(topic or "этим", fill)
+# Корневой маршрут для проверки (устраняет 404 от GET / и OPTIONS /)
+@app.route("/", methods=["GET"])
+def index():
+    return "Backend is running", 200
 
-def extract_topic(msg):
-    keywords = {
-        "погода": "изменением климата",
-        "ИИ": "нейросетями и машинным обучением",
-        "жизнь": "философией",
-        "время": "относительностью",
-        "любовь": "эмоциями и биохимией",
-        "космос": "астрономией и теорией большого взрыва",
-    }
-    for k, v in keywords.items():
-        if k in msg.lower():
-            return v
-    return None
-
-@app.route("/chat", methods=["POST"])
+# Основной маршрут API
+@app.route("/api/chat", methods=["POST"])
 def chat():
     data = request.get_json()
-    msg = data.get("message", "")
-    response = ""
 
-    if "погода" in msg:
-        response = "Сейчас +23°C и солнечно. Отличный день для размышлений."
-    elif "как дела" in msg or "как ты" in msg:
-        response = "Я функционирую стабильно. Готов отвечать на любые вопросы."
-    else:
-        response = fake_thought_response(msg)
+    # Проверка на наличие поля "message"
+    if not data or "message" not in data:
+        return jsonify({"error": "No message provided"}), 400
+
+    user_message = data["message"]
+    print("Сообщение от пользователя:", user_message)
+
+    # Здесь можно вставить логику обращения к ИИ
+    response = "ИИ: Печатает..."
 
     return jsonify({"response": response})
 
+# Запуск сервера локально (Render сам вызывает gunicorn, поэтому этот блок не используется)
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
